@@ -1,34 +1,21 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// BEGIN LOOP//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-String state = "";
+String state;
 double newph;
 
-void loop() {
-  wdt_reset();
-  if (currentKey != NO_KEY) {
-    char currentKey = custom_keypad.getKey();
-    Serial.print(F("To start key: "));
-    Serial.println(currentKey);
-    state.append(currentKey);
-  }
-  /// Change pH set_point ///////////////////////////////////////////////////////////////////////////////////
-  int answer = 0;
-  int quest_start = millis();
-  int time_diff = 0;
-  switch(currentKey){
-    case 'A':
-        wdt_disable();
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print(F("New pH setpoint:"));
-        lcd.setCursor(0, 1);
-        lcd.print(F(" .   "));
-        Serial.println(F("Step 1"));
-      
-      char key = state[state.length-1];
+/// Change pH set_point ///////////////////////////////////////////////////////////////////////////////////
+void changePHsetpoint(){
+  char key = state[state.length-1];
       switch (state.length){
-        case 0:
+        case 1:
+          wdt_disable();
+          lcd.clear();
+          lcd.setCursor(0, 0);
+          lcd.print(F("New pH setpoint:"));
+          lcd.setCursor(0, 1);
+          lcd.print(F(" .   "));
+          Serial.println(F("Step 1"));
+          break;
+
+        case 2:
           newph = key - '0';
           lcd.setCursor(0, 1);
           lcd.print(key);
@@ -36,7 +23,7 @@ void loop() {
           Serial.println(key);
         break;
 
-        case 1:
+        case 3:
           newph = ((key - '0') * 0.1) + newph;
           lcd.setCursor(2, 1);
           lcd.print(key);
@@ -44,7 +31,7 @@ void loop() {
           Serial.println(key);
         break;
 
-        case 2:
+        case 4:
           newph = ((key - '0') * 0.01) + newph;
           lcd.setCursor(3, 1);
           lcd.print(key);
@@ -52,7 +39,7 @@ void loop() {
           Serial.println(key);
         break;
 
-        case 3:
+        case 5:
           newph = ((key - '0') * 0.001) + newph;
           lcd.setCursor(4, 1);
           lcd.print(key);
@@ -60,29 +47,27 @@ void loop() {
           Serial.println(key);
           lcd.setCursor(10, 1);
           lcd.print(newph, 3);
-        break;
+          ph_set = newph;
+          set_point = -1 * ph_set;
+          SavePhSet();
+          delay(ONE_SECOND_DELAY_IN_MILLIS);
+          Serial.println(F("New pH Set End"));
+          break;
 
         default:
+          lcd.clear();
+          lcd.print(F("pH="));
+          lcd.setCursor(0, 1);  // Display position
+          lcd.print(F("T="));   // display"Temp="
+          wdt_enable(WDTO_8S);
           state.clear();
       }
 
-      ph_set = newph;
-      set_point = -1 * ph_set;
-      SavePhSet();
-      delay(ONE_SECOND_DELAY_IN_MILLIS);
-      Serial.println(F("New pH Set End"));
+}
 
-      lcd.clear();
-      lcd.print(F("pH="));
-      lcd.setCursor(0, 1);  // Display position
-      lcd.print(F("T="));   // display"Temp="
-      wdt_enable(WDTO_8S);
-      break;
-
-    /// Change Temperature set_point /////////////////////////////////////////////////////////////////////////////
-
-    case 'B':
-      wdt_disable();
+/// Change Temperature set_point /////////////////////////////////////////////////////////////////////////////
+void changeTemperatureSetpoint() {
+  wdt_disable();
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print(F("New Temp set:"));
@@ -130,6 +115,35 @@ void loop() {
       lcd.setCursor(0, 1);  // Display position
       lcd.print(F("T="));   // display"Temp="
       wdt_enable(WDTO_8S);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// BEGIN LOOP//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void loop() {
+  wdt_reset();
+  char currentKey = custom_keypad.getKey();
+  if (currentKey != NO_KEY) {
+    state += currentKey;
+    Serial.print(F("To start key: "));
+    Serial.println(currentKey);
+  }
+  /// Change pH set_point ///////////////////////////////////////////////////////////////////////////////////
+  int answer = 0;
+  int quest_start = millis();
+  int time_diff = 0;
+
+  switch(currentKey){
+    case 'A':
+      changePHsetpoint();
+      break;
+
+    /// Change Temperature set_point /////////////////////////////////////////////////////////////////////////////
+
+    case 'B':
+      changeTemperatureSetpoint();
       break;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////
